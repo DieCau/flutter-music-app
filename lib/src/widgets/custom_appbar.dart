@@ -9,7 +9,7 @@ class CustomAppbar extends StatelessWidget {
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.only(top: 30),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 25),
         child: const Row(
           children: [
             Icon(FontAwesomeIcons.chevronLeft),

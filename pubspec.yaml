@@ -28,12 +28,13 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  provider:
   animate_do: ^3.3.4
+  assets_audio_player: ^3.1.1
   cupertino_icons: ^1.0.6
   flutter:
     sdk: flutter
   font_awesome_flutter: ^10.7.0
+  provider: null
 
 dev_dependencies:
   flutter_lints: ^3.0.0

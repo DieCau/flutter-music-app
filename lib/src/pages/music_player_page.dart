@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:provider/provider.dart';
+import 'package:assets_audio_player/assets_audio_player.dart';
 
-import '/src/models/audioplayer_model.dart';
 import '../helpers/helpers.dart';
+import '../models/audioplayer_model.dart';
 import '/src/widgets/custom_appbar.dart';
 
 class MusicPlayerPage extends StatelessWidget {
@@ -42,7 +43,7 @@ class Background extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: screenSize.height * 0.8,
+      height: screenSize.height * 0.65,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
@@ -74,6 +75,7 @@ class Lyrics extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         itemExtent: 40,
         diameterRatio: 1.5,
+        magnification: 1.5,
         children: lyrics
             .map(
               (line) => Text(
@@ -101,7 +103,10 @@ class TitlePlay extends StatefulWidget {
 
 class _TitlePlayState extends State<TitlePlay> with SingleTickerProviderStateMixin {
   bool isPlaying = false;
+  bool firstTime = true;
   late AnimationController playAnimation;
+
+  final assetAudioPlayer = AssetsAudioPlayer();
 
   @override
   void initState() {
@@ -118,12 +123,31 @@ class _TitlePlayState extends State<TitlePlay> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  void open() {
+    final audioPlayerModel = Provider.of<AudioPlayerModel>(context, listen: false);
+    assetAudioPlayer.open(
+      Audio(
+        'assets/profugos.mp3',
+      ),
+      autoStart: true,
+      showNotification: true,
+    );
+
+    assetAudioPlayer.currentPosition.listen((duration) {
+      audioPlayerModel.current = duration;
+    });
+
+    assetAudioPlayer.current.listen((playingAudio) {
+      audioPlayerModel.songDuration = playingAudio?.audio.duration ?? const Duration(seconds: 0);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // ignore: avoid_unnecessary_containers
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 40),
-      margin: const EdgeInsets.only(top: 40),
+      margin: const EdgeInsets.only(top: 20, bottom: 38),
       child: Row(
         children: [
           Column(
@@ -147,7 +171,6 @@ class _TitlePlayState extends State<TitlePlay> with SingleTickerProviderStateMix
           const Spacer(),
           FloatingActionButton(
             onPressed: () {
-
               final audioPlayerModel = Provider.of<AudioPlayerModel>(context, listen: false);
               if (isPlaying) {
                 playAnimation.reverse();
@@ -157,6 +180,12 @@ class _TitlePlayState extends State<TitlePlay> with SingleTickerProviderStateMix
                 playAnimation.forward();
                 isPlaying = true;
                 audioPlayerModel.controller.repeat();
+              }
+              if (firstTime) {
+                open();
+                firstTime = false;
+              } else {
+                assetAudioPlayer.playOrPause();
               }
             },
             elevation: 0,
@@ -183,13 +212,14 @@ class ImageDiskDuration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 50),
-      margin: const EdgeInsets.only(top: 70),
-      child: const Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.only(top: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           ProgressBar(),
-          Expanded(child: SizedBox()),
-          ImageDisk(),
+          // const SizedBox(width: 20,),
+          const ImageDisk(),
         ],
       ),
     );
@@ -197,22 +227,20 @@ class ImageDiskDuration extends StatelessWidget {
 }
 
 class ProgressBar extends StatelessWidget {
-  const ProgressBar({
+  ProgressBar({
     super.key,
   });
+  final styleProgressBar = TextStyle(color: Colors.white.withOpacity(0.4));
 
   @override
   Widget build(BuildContext context) {
+    final audioPlayerModel = Provider.of<AudioPlayerModel>(context);
+    final porcentaje = audioPlayerModel.porcentaje;
     // ignore: avoid_unnecessary_containers
     return Container(
       child: Column(
         children: [
-          Text(
-            '00:00',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-            ),
-          ),
+          Text('${audioPlayerModel.songTotalDuration} ', style: styleProgressBar),
           const SizedBox(
             height: 10,
           ),
@@ -220,14 +248,14 @@ class ProgressBar extends StatelessWidget {
             children: [
               Container(
                 width: 3,
-                height: 230,
+                height: 170,
                 color: Colors.white.withOpacity(0.1),
               ),
               Positioned(
                 bottom: 0,
                 child: Container(
                   width: 3,
-                  height: 100,
+                  height: 170 * porcentaje,
                   color: Colors.white.withOpacity(0.8),
                 ),
               ),
@@ -237,10 +265,8 @@ class ProgressBar extends StatelessWidget {
             height: 10,
           ),
           Text(
-            '00:00',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-            ),
+            '${audioPlayerModel.currentSecond} ',
+            style: styleProgressBar,
           ),
         ],
       ),
@@ -259,8 +285,8 @@ class ImageDisk extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      width: 250,
-      height: 250,
+      width: 200,
+      height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(200),
         gradient: const LinearGradient(
