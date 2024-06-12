@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:provider/provider.dart';
 
+import '/src/models/audioplayer_model.dart';
 import '../helpers/helpers.dart';
 import '/src/widgets/custom_appbar.dart';
 
@@ -9,15 +12,49 @@ class MusicPlayerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          CustomAppbar(),
-          ImageDiskDuration(),
-          TitlePlay(),
-          Expanded(
-            child: Lyrics(),
+          Background(),
+          Column(
+            children: [
+              CustomAppbar(),
+              ImageDiskDuration(),
+              TitlePlay(),
+              Expanded(
+                child: Lyrics(),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class Background extends StatelessWidget {
+  const Background({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
+    return Container(
+      width: double.infinity,
+      height: screenSize.height * 0.8,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.center,
+          colors: [
+            Color(0xff33333e),
+            Color(0xff201e28),
+          ],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(60),
+        ),
       ),
     );
   }
@@ -34,28 +71,52 @@ class Lyrics extends StatelessWidget {
     // ignore: avoid_unnecessary_containers
     return Container(
       child: ListWheelScrollView(
-        physics: const FixedExtentScrollPhysics(),
-        itemExtent: double.infinity,
+        physics: const BouncingScrollPhysics(),
+        itemExtent: 40,
         diameterRatio: 1.5,
-        useMagnifier: true,
-        children: lyrics.map(
-          (linea) => Text(
-            linea,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.white.withOpacity(0.6),
-            ),
-          ),
-        ).toList(),
+        children: lyrics
+            .map(
+              (line) => Text(
+                line,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.white.withOpacity(0.6),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 }
 
-class TitlePlay extends StatelessWidget {
+class TitlePlay extends StatefulWidget {
   const TitlePlay({
     super.key,
   });
+
+  @override
+  State<TitlePlay> createState() => _TitlePlayState();
+}
+
+class _TitlePlayState extends State<TitlePlay> with SingleTickerProviderStateMixin {
+  bool isPlaying = false;
+  late AnimationController playAnimation;
+
+  @override
+  void initState() {
+    playAnimation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    playAnimation.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,14 +146,27 @@ class TitlePlay extends StatelessWidget {
           ),
           const Spacer(),
           FloatingActionButton(
-            onPressed: () {},
+            onPressed: () {
+
+              final audioPlayerModel = Provider.of<AudioPlayerModel>(context, listen: false);
+              if (isPlaying) {
+                playAnimation.reverse();
+                isPlaying = false;
+                audioPlayerModel.controller.stop();
+              } else {
+                playAnimation.forward();
+                isPlaying = true;
+                audioPlayerModel.controller.repeat();
+              }
+            },
             elevation: 0,
             highlightElevation: 0,
             backgroundColor: const Color(0xfff7e600),
             shape: const StadiumBorder(),
-            child: const Icon(
-              Icons.play_arrow,
-              color: Color(0xff1c1c25),
+            child: AnimatedIcon(
+              icon: AnimatedIcons.play_pause,
+              progress: playAnimation,
+              color: const Color(0xff201e28),
             ),
           ),
         ],
@@ -181,6 +255,8 @@ class ImageDisk extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final audioPlayerModel = Provider.of<AudioPlayerModel>(context);
+
     return Container(
       padding: const EdgeInsets.all(20),
       width: 250,
@@ -200,9 +276,16 @@ class ImageDisk extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Image(
-              image: AssetImage(
-                'assets/soda.jpg',
+            SpinPerfect(
+              duration: const Duration(seconds: 10),
+              infinite: true,
+              manualTrigger: true,
+              controller: (animationController) =>
+                  audioPlayerModel.controller = animationController,
+              child: const Image(
+                image: AssetImage(
+                  'assets/soda.jpg',
+                ),
               ),
             ),
             Container(
